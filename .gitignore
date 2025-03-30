@@ -1,3 +1,4 @@
 organic-food-web-scraper.iml
 .venv
 .idea
+*.pyc
