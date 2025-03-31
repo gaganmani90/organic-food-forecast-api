@@ -90,3 +90,10 @@ Load data via
 python search_engine/main.py
 
 ```
+
+# API
+
+```shell
+export PYTHONPATH=$PYTHONPATH:/Users/gaganmani/IdeaProjects/organic-food-web-scraper
+uvicorn api.api_main:app --reload --port 8000
+```
