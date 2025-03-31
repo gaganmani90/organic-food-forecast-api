@@ -99,6 +99,12 @@ uvicorn api.api_main:app --reload --port 8000
 uvicorn api.api_main:app --reload
 pkill -f uvicorn #kill the server
 ```
+Cloudfare Tunnel
+```shell
+cloudflared tunnel --url http://localhost:8000
+```
+Example UI: https://howto-instructor-soc-submit.trycloudflare.com/api/search?query=kota
+
 # UI 
 cd api
 streamlit run search_ui.py
