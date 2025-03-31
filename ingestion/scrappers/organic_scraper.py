@@ -106,9 +106,7 @@ class OrganicFoodScraper(BaseScraper):
         Saves extracted data to CSV and JSON files.
         """
         if certifications:
-            csv_file = os.path.join(OUTPUT_DIR, f"{self.state}_organic_food_certifications.csv")
             json_file = os.path.join(OUTPUT_DIR, f"{self.state}_organic_food_certifications.json")
 
-            DataSaver.save_to_csv(certifications, csv_file)
             DataSaver.save_to_json(certifications, json_file)
             print(f"✅ Scraped {len(certifications)} businesses for {self.state}.")

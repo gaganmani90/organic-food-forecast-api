@@ -42,18 +42,20 @@ MH,95,2025-03-08T10:35:20.123456
 - **Sample Data Format:**
 ```json
 [
-    {
-        "Company Name": "AADHYA ORGANIC HERBS PRIVATE LIMITED Certified",
-        "Certification ID": "ORG-2403-000509",
-        "Location": "Kurnool",
-        "Email": "info@aadhyaorganic.com",
-        "Address": "805-2A.Main road, Krishnagiri sub post office, Bapanadoddi village, Kurnool, Andhra Pradesh",
-        "Certifying Agency": "NPOP",
-        "Valid From": "12/03/2024",
-        "Valid To": "11/03/2025",
-        "Products": "Ajwain, Alfalfa powder, Amla dried, Amla powder, Amla TBC, ..."
-    }
+  {
+    "store_name": "AADHYA ORGANIC HERBS PRIVATE LIMITED Certified",
+    "certification_id": "ORG-2403-000509",
+    "state": "Kurnool",
+    "email": "info@aadhyaorganic.com",
+    "address": "805-2A. Main Road, Krishnagiri Sub Post Office, Bapanadoddi Village, Kurnool, Andhra Pradesh",
+    "certification_body": "NPOP",
+    "valid_from": "2024-03-12",
+    "valid_to": "2025-03-11",
+    "products": "Ajwain, Alfalfa powder, Amla dried, Amla powder, Amla TBC",
+    "scraped_at": "2025-03-30T18:21:34.785247"
+  }
 ]
+
 ```
 
 ## Configuration
@@ -68,3 +70,23 @@ MIT License
 
 ## Contact
 For questions or suggestions, reach out to [your email or GitHub handle].
+
+# Search Engine 
+
+```shell
+# start server locally 
+docker run -d --name es-mvp -p 9200:9200 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.17.13
+
+```
+Configuration .env file
+```shell
+ES_HOST=http://localhost:9200
+DATA_FILE_PATH=ingestion/output/
+
+```
+
+Load data via
+```shell
+python search_engine/main.py
+
+```
