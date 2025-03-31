@@ -96,4 +96,10 @@ python search_engine/main.py
 ```shell
 export PYTHONPATH=$PYTHONPATH:/Users/gaganmani/IdeaProjects/organic-food-web-scraper
 uvicorn api.api_main:app --reload --port 8000
+uvicorn api.api_main:app --reload
+pkill -f uvicorn #kill the server
+```
+# UI 
+cd api
+streamlit run search_ui.py
 ```

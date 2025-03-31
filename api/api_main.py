@@ -27,7 +27,8 @@ async def search(query: Optional[str] = Query("")):
                     "query_string": {
                         "query": query
                     }
-                }
+                },
+                "size": 10000  # max allowed value
             }
         )
         return result
