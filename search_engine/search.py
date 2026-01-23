@@ -3,7 +3,12 @@ from search_engine.es_client import get_es_client
 def search_stores(query: str = "", state: str = "", from_: int = 0, size: int = 10, index_name: str = "organic_stores"):
     es = get_es_client()
 
-    must_clause = [{"match": {"store_name": query}}] if query else [{"match_all": {}}]
+    # Use query_string to search across all fields (like original API)
+    if query:
+        must_clause = [{"query_string": {"query": query}}]
+    else:
+        must_clause = [{"match_all": {}}]
+    
     filter_clause = [{"term": {"state": state}}] if state else []
 
     search_query = {

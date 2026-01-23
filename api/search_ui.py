@@ -49,11 +49,20 @@ if st.button("Search"):
         res = requests.get(url)
         res.raise_for_status()
         data = res.json()
-        hits = data.get("hits", {}).get("hits", [])
-        if not hits:
+        
+        # Handle new clean format
+        if "results" in data:
+            results = data.get("results", [])
+        else:
+            # Fallback for old format (backward compatibility)
+            results = [hit.get("_source", hit) for hit in data.get("hits", {}).get("hits", [])]
+        
+        if not results:
             st.write("No results found.")
-        for hit in hits:
-            render_store_result(hit["_source"])
+        else:
+            st.write(f"Found {len(results)} result(s)")
+            for result in results:
+                render_store_result(result)
 
     except Exception as e:
         st.error(f"API Error: {e}")
