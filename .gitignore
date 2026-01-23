@@ -13,7 +13,25 @@ package-lock.json
 dist/
 build/
 *.local
+
+# Environment files (keep .env but ignore local variants)
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Vite
+.vite/
+
+# IDE
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
