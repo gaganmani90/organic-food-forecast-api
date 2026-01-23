@@ -25,26 +25,28 @@ if [ -f "$PROJECT_ROOT/api_server.pid" ]; then
     fi
 fi
 
-# Stop UI server
-if [ -f "$PROJECT_ROOT/ui_server.pid" ]; then
-    UI_PID=$(cat "$PROJECT_ROOT/ui_server.pid")
-    if kill -0 "$UI_PID" 2>/dev/null; then
-        echo -e "${YELLOW}🛑 Stopping UI server (PID: $UI_PID)...${NC}"
-        kill "$UI_PID" 2>/dev/null || true
-        rm "$PROJECT_ROOT/ui_server.pid"
-        echo -e "${GREEN}✅ UI server stopped${NC}"
+# Stop Frontend server
+if [ -f "$PROJECT_ROOT/frontend_server.pid" ]; then
+    FRONTEND_PID=$(cat "$PROJECT_ROOT/frontend_server.pid")
+    if kill -0 "$FRONTEND_PID" 2>/dev/null; then
+        echo -e "${YELLOW}🛑 Stopping Frontend server (PID: $FRONTEND_PID)...${NC}"
+        # Kill the process and its children (npm run dev spawns child processes)
+        pkill -P "$FRONTEND_PID" 2>/dev/null || true
+        kill "$FRONTEND_PID" 2>/dev/null || true
+        rm "$PROJECT_ROOT/frontend_server.pid"
+        echo -e "${GREEN}✅ Frontend server stopped${NC}"
     fi
 fi
 
-# Kill any processes on ports 8000 and 8501
+# Kill any processes on ports 8000 and 5173
 if lsof -ti:8000 > /dev/null 2>&1; then
     echo -e "${YELLOW}🛑 Killing process on port 8000...${NC}"
     lsof -ti:8000 | xargs kill -9 2>/dev/null || true
 fi
 
-if lsof -ti:8501 > /dev/null 2>&1; then
-    echo -e "${YELLOW}🛑 Killing process on port 8501...${NC}"
-    lsof -ti:8501 | xargs kill -9 2>/dev/null || true
+if lsof -ti:5173 > /dev/null 2>&1; then
+    echo -e "${YELLOW}🛑 Killing process on port 5173 (React dev server)...${NC}"
+    lsof -ti:5173 | xargs kill -9 2>/dev/null || true
 fi
 
 # Stop Elasticsearch (optional - comment out if you want to keep it running)

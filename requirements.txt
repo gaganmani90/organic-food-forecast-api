@@ -5,5 +5,4 @@ elasticsearch
 python-dotenv
 fastapi
 uvicorn
-streamlit
 watchdog

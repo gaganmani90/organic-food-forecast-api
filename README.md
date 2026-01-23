@@ -10,7 +10,7 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 - 💾 **Data Storage**: Saves data in JSON format and indexes in Elasticsearch
 - 🔎 **Search Engine**: Full-text search on company names, addresses, products, and more
 - 🌐 **REST API**: FastAPI-based API for programmatic access
-- 🖥️ **Web UI**: Streamlit-based user interface for searching and browsing
+- 🖥️ **Web UI**: React TypeScript web application for searching and browsing
 - 🐳 **Docker Support**: Easy local development with Docker Elasticsearch
 - ✅ **Testing**: Comprehensive unit and integration tests
 
@@ -77,10 +77,11 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 ┌─────────────────────────────────────────────────────────────────┐
 │                       UI LAYER                                  │
 │  ┌──────────────────────────────────────────────────────┐     │
-│  │         Streamlit Web UI (Port 8501)                 │     │
-│  │  - Search interface                                   │     │
+│  │         React Web Application (Port 5173)            │     │
+│  │  - Modern TypeScript React app                        │     │
+│  │  - Search interface with Tailwind CSS                 │     │
 │  │  - Display store details, products, certifications  │     │
-│  │  - Configurable API endpoint                         │     │
+│  │  - Responsive design                                   │     │
 │  └──────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -100,6 +101,7 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 ### Required Software
 
 - **Python 3.8+** (3.13 recommended)
+- **Node.js 18+** and **npm** (for React frontend)
 - **Docker Desktop** (for local Elasticsearch)
 - **Git** (for cloning the repository)
 
@@ -180,7 +182,7 @@ This single command will:
 3. ✅ Wait for Elasticsearch to be ready
 4. ✅ Check and load data if needed
 5. ✅ Start API server (port 8000)
-6. ✅ Start Streamlit UI (port 8501)
+6. ✅ Start React frontend (port 5173)
 
 **Stop all services:**
 ```bash
@@ -191,7 +193,7 @@ This single command will:
 
 After running `./start_services.sh`, access:
 
-- **🖥️ Web UI**: http://localhost:8501
+- **🖥️ Web UI**: http://localhost:5173
 - **🌐 API Server**: http://localhost:8000
 - **📖 API Documentation**: http://localhost:8000/docs
 - **📊 Elasticsearch**: http://localhost:9200
@@ -274,7 +276,6 @@ The integration tests will:
 | **python-dotenv** | Latest | Environment variable management |
 | **fastapi** | Latest | Modern web framework for API |
 | **uvicorn** | Latest | ASGI server for FastAPI |
-| **streamlit** | Latest | Web UI framework |
 | **watchdog** | Latest | File system monitoring |
 
 ### External Services
@@ -313,8 +314,10 @@ organic-food-web-scraper/
 │       ├── search.py      # Search functions
 │       └── loaders/       # Data loaders
 ├── frontend/              # Frontend applications
-│   └── streamlit-ui/     # Streamlit UI (current)
-│       └── search_ui.py  # Streamlit search interface
+│   └── react-web/        # React TypeScript application
+│       ├── src/          # React source code
+│       ├── package.json  # Node.js dependencies
+│       └── README.md     # Frontend documentation
 ├── tests/                 # Test suite
 │   ├── ingestion/         # Ingestion tests
 │   └── search_engine/     # Search engine tests
@@ -388,11 +391,13 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
 uvicorn backend.api.api_main:app --reload --port 8000
 ```
 
-**3. Start UI:**
+**3. Start React Web UI:**
 ```bash
-cd frontend/streamlit-ui
-streamlit run search_ui.py
+cd frontend/react-web
+npm install
+npm run dev
 ```
+Then access http://localhost:5173 in your browser.
 
 ---
 
@@ -457,14 +462,14 @@ Visit http://localhost:8000/docs for interactive Swagger documentation.
 
 ### API/UI Not Starting
 
-**Problem**: Port 8000 or 8501 already in use
+**Problem**: Port 8000 or 5173 already in use
 - **Solution**: 
   ```bash
   # Kill process on port 8000
   lsof -ti:8000 | xargs kill -9
   
-  # Kill process on port 8501
-  lsof -ti:8501 | xargs kill -9
+  # Kill process on port 5173 (React dev server)
+  lsof -ti:5173 | xargs kill -9
   ```
 
 ### Data Not Loading
@@ -494,7 +499,7 @@ python -m unittest tests.search_engine.test_es_client -v
 - **Ingestion Layer**: Handles web scraping and data extraction
 - **Search Engine Layer**: Manages Elasticsearch indexing and queries
 - **API Layer**: Provides REST API endpoints
-- **UI Layer**: Streamlit-based web interface
+- **UI Layer**: React TypeScript web application
 
 ### Adding New Features
 
@@ -531,6 +536,7 @@ For questions or suggestions, reach out to [your email or GitHub handle].
 ## Additional Resources
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Streamlit Documentation](https://docs.streamlit.io/)
+- [React Documentation](https://react.dev/)
+- [Vite Documentation](https://vitejs.dev/)
 - [Elasticsearch Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
 - [Docker Documentation](https://docs.docker.com/)
