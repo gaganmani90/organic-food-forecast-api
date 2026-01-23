@@ -14,9 +14,9 @@ sys.path.insert(0, project_root)
 
 def run_all_tests():
     """Discover and run all tests in the tests directory"""
-    # Set PYTHONPATH
+    # Set PYTHONPATH to include backend directory
     env = os.environ.copy()
-    env['PYTHONPATH'] = project_root
+    env['PYTHONPATH'] = os.path.join(project_root, 'backend')
     
     # Discover and run tests
     loader = unittest.TestLoader()

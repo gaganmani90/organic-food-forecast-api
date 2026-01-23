@@ -1,4 +1,4 @@
-from managers.scraper_manager import ScraperManager
+from ingestion.managers.scraper_manager import ScraperManager
 from ingestion.scrappers.base_scrapper import STATE_CODES
 from ingestion.scrappers.organic_scraper import OrganicFoodScraper
 

@@ -1,6 +1,6 @@
 from search_engine.index_setup import create_index
 from search_engine.loader import load_to_elasticsearch
-from loaders.file_loader import get_organic_store_data_from_file
+from search_engine.loaders.file_loader import get_organic_store_data_from_file
 
 if __name__ == "__main__":
     create_index()

@@ -69,8 +69,8 @@ ES_COUNT=$(curl -s http://localhost:9200/organic_stores/_count 2>/dev/null | gre
 
 if [ "$ES_COUNT" = "0" ] || [ -z "$ES_COUNT" ]; then
     echo -e "${YELLOW}📥 No data found. Loading data into Elasticsearch...${NC}"
-    export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
-    "$PROJECT_ROOT/.venv/bin/python" "$PROJECT_ROOT/search_engine/main.py"
+    export PYTHONPATH="$PROJECT_ROOT/backend:$PYTHONPATH"
+    "$PROJECT_ROOT/.venv/bin/python" "$PROJECT_ROOT/backend/search_engine/main.py"
     echo -e "${GREEN}✅ Data loaded!${NC}\n"
 else
     echo -e "${GREEN}✅ Elasticsearch already has $ES_COUNT documents${NC}\n"
@@ -78,7 +78,7 @@ fi
 
 # 3. Start API server
 echo -e "${YELLOW}🌐 Step 3: Starting API server...${NC}"
-export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+export PYTHONPATH="$PROJECT_ROOT/backend:$PYTHONPATH"
 
 # Check if API is already running
 if lsof -ti:8000 > /dev/null 2>&1; then
@@ -88,7 +88,7 @@ if lsof -ti:8000 > /dev/null 2>&1; then
 fi
 
 # Start API server in background
-nohup "$PROJECT_ROOT/.venv/bin/uvicorn" api.api_main:app --reload --port 8000 > "$PROJECT_ROOT/api_server.log" 2>&1 &
+nohup "$PROJECT_ROOT/.venv/bin/uvicorn" backend.api.api_main:app --reload --port 8000 > "$PROJECT_ROOT/api_server.log" 2>&1 &
 API_PID=$!
 echo $API_PID > "$PROJECT_ROOT/api_server.pid"
 
@@ -111,7 +111,7 @@ if lsof -ti:8501 > /dev/null 2>&1; then
 fi
 
 # Start UI in background
-cd "$PROJECT_ROOT/api"
+cd "$PROJECT_ROOT/frontend/streamlit-ui"
 nohup "$PROJECT_ROOT/.venv/bin/streamlit" run search_ui.py > "$PROJECT_ROOT/ui_server.log" 2>&1 &
 UI_PID=$!
 echo $UI_PID > "$PROJECT_ROOT/ui_server.pid"

@@ -202,12 +202,14 @@ If this is your first time running the project:
 
 1. **Scrape data** (if not already done):
    ```bash
-   python ingestion/main.py
+   export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
+   python backend/ingestion/main.py
    ```
 
 2. **Load data into Elasticsearch**:
    ```bash
-   python search_engine/main.py
+   export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
+   python backend/search_engine/main.py
    ```
 
 3. **Start services**:
@@ -294,22 +296,25 @@ The integration tests will:
 
 ```
 organic-food-web-scraper/
-├── api/                    # API and UI layer
-│   ├── api_main.py        # FastAPI application
-│   └── search_ui.py       # Streamlit UI
-├── ingestion/              # Data scraping layer
-│   ├── main.py            # Scraper entry point
-│   ├── managers/          # Scraper management
-│   ├── scrappers/         # Web scraping logic
-│   ├── utils/             # Utility functions
-│   └── output/            # Scraped JSON files
-├── search_engine/         # Search and indexing layer
-│   ├── main.py            # Data loader entry point
-│   ├── es_client.py       # Elasticsearch client
-│   ├── index_setup.py     # Index configuration
-│   ├── loader.py          # Data loading logic
-│   ├── search.py          # Search functions
-│   └── loaders/           # Data loaders
+├── backend/                # Backend services
+│   ├── api/               # API layer
+│   │   └── api_main.py   # FastAPI application
+│   ├── ingestion/         # Data scraping layer
+│   │   ├── main.py        # Scraper entry point
+│   │   ├── managers/      # Scraper management
+│   │   ├── scrappers/     # Web scraping logic
+│   │   ├── utils/         # Utility functions
+│   │   └── output/        # Scraped JSON files
+│   └── search_engine/     # Search and indexing layer
+│       ├── main.py        # Data loader entry point
+│       ├── es_client.py  # Elasticsearch client
+│       ├── index_setup.py # Index configuration
+│       ├── loader.py      # Data loading logic
+│       ├── search.py      # Search functions
+│       └── loaders/       # Data loaders
+├── frontend/              # Frontend applications
+│   └── streamlit-ui/     # Streamlit UI (current)
+│       └── search_ui.py  # Streamlit search interface
 ├── tests/                 # Test suite
 │   ├── ingestion/         # Ingestion tests
 │   └── search_engine/     # Search engine tests
@@ -379,13 +384,13 @@ docker run -d --name es-mvp -p 9200:9200 \
 
 **2. Start API Server:**
 ```bash
-export PYTHONPATH=$PYTHONPATH:$(pwd)
-uvicorn api.api_main:app --reload --port 8000
+export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
+uvicorn backend.api.api_main:app --reload --port 8000
 ```
 
 **3. Start UI:**
 ```bash
-cd api
+cd frontend/streamlit-ui
 streamlit run search_ui.py
 ```
 
