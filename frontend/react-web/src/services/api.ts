@@ -11,9 +11,9 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 export const api = {
-  search: async (query: string): Promise<SearchResponse> => {
+  search: async (query: string, page: number = 1, pageSize: number = 20): Promise<SearchResponse> => {
     const response = await apiClient.get<SearchResponse>('/api/search', {
-      params: { query },
+      params: { query, page, page_size: pageSize },
     });
     return response.data;
   },

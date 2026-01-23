@@ -40,7 +40,7 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 │                            ▼                                     │
 │              ┌─────────────────────────┐                        │
 │              │  JSON Files (per state)  │                        │
-│              │  ingestion/output/      │                        │
+│              │  output/               │                        │
 │              └─────────────────────────┘                        │
 └────────────────────────────┬──────────────────────────────────────┘
                              │
@@ -151,7 +151,7 @@ ES_API_KEY=your-api-key
 USE_LOCAL_ES=true
 
 # Data file path
-DATA_FILE_PATH=/path/to/your/project/ingestion/output/
+DATA_FILE_PATH=/path/to/your/project/output/
 
 # API base URL
 API_BASE_URL=http://localhost:8000
@@ -341,7 +341,7 @@ organic-food-web-scraper/
 | `ES_HOST_LOCAL` | Local Elasticsearch URL | `http://localhost:9200` |
 | `ES_HOST` | Production Elasticsearch URL | (required if `USE_LOCAL_ES=false`) |
 | `ES_API_KEY` | Production API key | (required if `USE_LOCAL_ES=false`) |
-| `DATA_FILE_PATH` | Path to scraped JSON files | `ingestion/output/` |
+| `DATA_FILE_PATH` | Path to scraped JSON files | `output/` |
 | `API_BASE_URL` | API server URL | `http://localhost:8000` |
 
 ### Switching Between Local and Production
@@ -366,13 +366,15 @@ ES_API_KEY=your-api-key
 
 Scrape data for all states:
 ```bash
-python ingestion/main.py
+export PYTHONPATH="$PWD/backend:$PYTHONPATH"
+.venv/bin/python backend/ingestion/main.py
 ```
 
 ### Loading Data to Elasticsearch
 
 ```bash
-python search_engine/main.py
+export PYTHONPATH="$PWD/backend:$PYTHONPATH"
+.venv/bin/python backend/search_engine/main.py
 ```
 
 ### Starting Services Manually
@@ -418,20 +420,24 @@ curl "http://localhost:8000/api/search?query=organic"
 Response:
 ```json
 {
-  "hits": {
-    "total": {"value": 100},
-    "hits": [
-      {
-        "_source": {
-          "store_name": "...",
-          "certification_id": "...",
-          "state": "...",
-          "email": "...",
-          "address": "...",
-          "products": "..."
-        }
-      }
-    ]
+  "results": [
+    {
+      "store_name": "...",
+      "certification_id": "...",
+      "state": "...",
+      "email": "...",
+      "address": "...",
+      "products": "...",
+      "valid_from": "YYYY-MM-DD",
+      "valid_to": "YYYY-MM-DD",
+      "scraped_at": "YYYY-MM-DDTHH:MM:SS"
+    }
+  ],
+  "pagination": {
+    "total": 123,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 7
   }
 }
 ```
@@ -476,8 +482,8 @@ Visit http://localhost:8000/docs for interactive Swagger documentation.
 
 **Problem**: No results in search
 - **Solution**: 
-  1. Check if data exists: `ls ingestion/output/*.json`
-  2. Load data: `python search_engine/main.py`
+  1. Check if data exists: `ls output/*.json`
+  2. Load data: `python backend/search_engine/main.py`
   3. Verify Elasticsearch has data: `curl http://localhost:9200/organic_stores/_count`
 
 ---

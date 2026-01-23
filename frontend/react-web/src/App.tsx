@@ -7,11 +7,20 @@ import { useSearch } from './hooks/useSearch';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 20;
 
-  const { stores, isLoading, error } = useSearch(searchQuery);
+  const { stores, pagination, isLoading, error } = useSearch(searchQuery, currentPage, pageSize);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    setCurrentPage(1); // Reset to page 1 on new search
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -19,7 +28,13 @@ function App() {
       <Header />
       <main className="container mx-auto px-4 py-8 flex-1">
         <SearchBar onSearch={handleSearch} loading={isLoading} />
-        <StoreList stores={stores} loading={isLoading} error={error} />
+        <StoreList 
+          stores={stores} 
+          pagination={pagination}
+          loading={isLoading} 
+          error={error}
+          onPageChange={handlePageChange}
+        />
       </main>
       <Footer />
     </div>

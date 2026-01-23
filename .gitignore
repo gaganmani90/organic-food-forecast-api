@@ -14,11 +14,19 @@ dist/
 build/
 *.local
 
+# Scraped output data (from ingestion)
+output/
+
 # Environment files (keep .env but ignore local variants)
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Ignore .env in git (it contains secrets)
+.env
+.env.*
+!.env.example
 
 # Vite
 .vite/

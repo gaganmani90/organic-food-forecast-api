@@ -15,7 +15,15 @@ export interface Store {
   };
 }
 
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 export interface SearchResponse {
   results: Store[];
+  pagination?: PaginationInfo;
   error?: string;
 }

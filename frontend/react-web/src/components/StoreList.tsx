@@ -1,13 +1,16 @@
-import { Store } from '../types/store';
+import { Store, PaginationInfo } from '../types/store';
 import { StoreCard } from './StoreCard';
+import { Pagination } from './Pagination';
 
 interface StoreListProps {
   stores: Store[];
+  pagination: PaginationInfo | null;
   loading: boolean;
   error: Error | null;
+  onPageChange: (page: number) => void;
 }
 
-export const StoreList = ({ stores, loading, error }: StoreListProps) => {
+export const StoreList = ({ stores, pagination, loading, error, onPageChange }: StoreListProps) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -36,13 +39,16 @@ export const StoreList = ({ stores, loading, error }: StoreListProps) => {
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">
-        Found {stores.length} result(s)
+        {pagination ? `Found ${pagination.total} result(s)` : `Found ${stores.length} result(s)`}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stores.map((store, index) => (
           <StoreCard key={store.certification_id || index} store={store} />
         ))}
       </div>
+      {pagination && (
+        <Pagination pagination={pagination} onPageChange={onPageChange} />
+      )}
     </div>
   );
 };
