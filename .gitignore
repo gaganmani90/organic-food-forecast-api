@@ -2,3 +2,7 @@ organic-food-web-scraper.iml
 .venv
 .idea
 *.pyc
+__pycache__/
+*.log
+*.pid
+.vscode/
