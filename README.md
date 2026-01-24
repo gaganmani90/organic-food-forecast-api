@@ -11,7 +11,7 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 - 🔎 **Search Engine**: Full-text search on company names, addresses, products, and more
 - 🌐 **REST API**: FastAPI-based API for programmatic access
 - 🖥️ **Web UI**: React TypeScript web application for searching and browsing
-- 🐳 **Docker Support**: Easy local development with Docker Elasticsearch
+- ☁️ **Cloud Search**: Uses Bonsai (OpenSearch cloud) for all environments
 - ✅ **Testing**: Comprehensive unit and integration tests
 
 ---
@@ -49,12 +49,12 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 ┌─────────────────────────────────────────────────────────────────┐
 │                   SEARCH ENGINE LAYER                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │ File Loader  │→ │   Indexer    │→ │ Elasticsearch│         │
-│  │              │  │   Setup      │  │  (Docker)    │         │
+│  │ File Loader  │→ │   Indexer    │→ │  Bonsai      │         │
+│  │              │  │   Setup      │  │  (Cloud)     │         │
 │  └──────────────┘  └──────────────┘  └──────────────┘         │
 │                                                               │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │         Elasticsearch Index: organic_stores            │   │
+│  │         OpenSearch Index: organic_stores               │   │
 │  │  - Full-text search on store_name, address, products  │   │
 │  │  - Filter by state, certification dates                │   │
 │  └──────────────────────────────────────────────────────┘   │
@@ -90,8 +90,8 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 
 1. **Extract**: Scraper fetches data from Jaivik Bharat website
 2. **Transform**: Data is parsed and structured into JSON format
-3. **Load**: JSON files are indexed into Elasticsearch
-4. **Search**: API queries Elasticsearch and returns results
+3. **Load**: JSON files are indexed into Bonsai (OpenSearch cloud)
+4. **Search**: API queries Bonsai and returns results
 5. **Display**: UI renders search results in a user-friendly format
 
 ---
@@ -102,14 +102,12 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 
 - **Python 3.8+** (3.13 recommended)
 - **Node.js 18+** and **npm** (for React frontend)
-- **Docker Desktop** (for local Elasticsearch)
 - **Git** (for cloning the repository)
 
 ### System Requirements
 
-- **RAM**: Minimum 4GB (8GB+ recommended for Elasticsearch)
-- **Disk Space**: ~2GB for Docker images and data
-- **Network**: Internet connection for scraping and package installation
+- **RAM**: Minimum 4GB
+- **Network**: Internet connection (Bonsai cloud requires internet)
 
 ---
 
@@ -137,33 +135,17 @@ pip install -r requirements.txt
 
 ### 4. Configure Environment
 
-Create/update `.env` file:
+Create `.env` file with Bonsai credentials:
 
 ```bash
-# Local Development (Docker)
-ES_HOST_LOCAL=http://localhost:9200
-
-# Production (Elastic Cloud) - Optional
-ES_HOST=https://your-elastic-cloud-url:443
-ES_API_KEY=your-api-key
-
-# Use local Elasticsearch if set to true, otherwise use production
-USE_LOCAL_ES=true
-
-# Data file path
-DATA_FILE_PATH=/path/to/your/project/output/
-
-# API base URL
-API_BASE_URL=http://localhost:8000
+USE_LOCAL_ES=false
+ES_HOST=https://forgiving-garcinia-1kxfpcz2.us-east-1.bonsaisearch.net
+ES_USERNAME=your-bonsai-username
+ES_PASSWORD=your-bonsai-password
+DATA_FILE_PATH=/absolute/path/to/organic-food-web-scraper/output/
 ```
 
-### 5. Install Docker Desktop
-
-- **macOS**: `brew install --cask docker` or download from [docker.com](https://www.docker.com/products/docker-desktop/)
-- **Linux**: Follow [Docker installation guide](https://docs.docker.com/engine/install/)
-- **Windows**: Download Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop/)
-
-**Important**: Start Docker Desktop before running the services.
+**Note**: All environments use Bonsai (OpenSearch cloud). No Docker needed.
 
 ---
 
@@ -177,12 +159,9 @@ API_BASE_URL=http://localhost:8000
 ```
 
 This single command will:
-1. ✅ Check Docker is running
-2. ✅ Start Elasticsearch container
-3. ✅ Wait for Elasticsearch to be ready
-4. ✅ Check and load data if needed
-5. ✅ Start API server (port 8000)
-6. ✅ Start React frontend (port 5173)
+1. ✅ Check Bonsai connection and load data if needed
+2. ✅ Start API server (port 8000)
+3. ✅ Start React frontend (port 5173)
 
 **Stop all services:**
 ```bash
@@ -196,7 +175,7 @@ After running `./start_services.sh`, access:
 - **🖥️ Web UI**: http://localhost:5173
 - **🌐 API Server**: http://localhost:8000
 - **📖 API Documentation**: http://localhost:8000/docs
-- **📊 Elasticsearch**: http://localhost:9200
+- **☁️ Search Backend**: Bonsai (OpenSearch cloud)
 
 ### First Time Setup
 
@@ -237,29 +216,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 The project includes:
 
-- **Unit Tests**: Mocked tests for Elasticsearch client configuration
-- **Integration Tests**: Real Docker-based tests that:
-  - Start Elasticsearch container
-  - Test connections and operations
-  - Clean up after completion
-
-### Running Integration Tests
-
-Integration tests require Docker to be running:
-
-```bash
-# Make sure Docker Desktop is running
-docker ps
-
-# Run tests
-python -m unittest tests.search_engine.test_es_client -v
-```
-
-The integration tests will:
-- Automatically start an Elasticsearch test container
-- Run all test cases
-- Clean up test data
-- Stop and remove the container
+- **Unit Tests**: Mocked tests for OpenSearch client configuration
 
 ---
 
@@ -272,7 +229,7 @@ The integration tests will:
 | **requests** | Latest | HTTP library for web scraping |
 | **beautifulsoup4** | Latest | HTML parsing and extraction |
 | **pandas** | Latest | Data manipulation and processing |
-| **elasticsearch** | Latest | Elasticsearch Python client |
+| **opensearch-py** | Latest | OpenSearch Python client (for Bonsai) |
 | **python-dotenv** | Latest | Environment variable management |
 | **fastapi** | Latest | Modern web framework for API |
 | **uvicorn** | Latest | ASGI server for FastAPI |
@@ -280,14 +237,14 @@ The integration tests will:
 
 ### External Services
 
-| Service | Purpose | Local/Cloud |
-|---------|---------|-------------|
-| **Elasticsearch** | Search engine and data storage | Docker (local) or Elastic Cloud (production) |
+| Service | Purpose | Location |
+|---------|---------|----------|
+| **Bonsai (OpenSearch)** | Search engine and data storage | Cloud (all environments) |
 | **Jaivik Bharat Website** | Data source for scraping | External (FSSAI website) |
 
 ### Infrastructure
 
-- **Docker**: Container runtime for Elasticsearch
+- **Bonsai**: OpenSearch cloud service (free tier available)
 - **Python Virtual Environment**: Dependency isolation
 - **Git**: Version control
 
@@ -308,7 +265,7 @@ organic-food-web-scraper/
 │   │   └── output/        # Scraped JSON files
 │   └── search_engine/     # Search and indexing layer
 │       ├── main.py        # Data loader entry point
-│       ├── es_client.py  # Elasticsearch client
+│       ├── es_client.py  # OpenSearch client (Bonsai)
 │       ├── index_setup.py # Index configuration
 │       ├── loader.py      # Data loading logic
 │       ├── search.py      # Search functions
@@ -337,16 +294,22 @@ organic-food-web-scraper/
 
 **All environments use Bonsai (OpenSearch cloud)** - no local Elasticsearch.
 
-- **Local development**: Frontend (localhost:5173) + Backend (localhost:8000) → Bonsai cloud
-- **Production**: Same setup, different URLs
+- **Local**: Frontend (localhost:5173) + Backend (localhost:8000) → Bonsai cloud
+- **Production**: Vercel (frontend) + Railway (backend) → Bonsai cloud
 
 ### Environment Variables (.env)
 
+```bash
 USE_LOCAL_ES=false
-ES_HOST=https://forgiving-garcinia-1kxfpcz2.us-east-1.bonsaisearch.net
-ES_USERNAME=******
-ES_PASSWORD=***
-DATA_FILE_PATH=/Users/gaganmani/IdeaProjects/organic-food-web-scraper/output/
+ES_HOST=https://your-bonsai-cluster.us-east-1.bonsaisearch.net
+ES_USERNAME=your-bonsai-username
+ES_PASSWORD=your-bonsai-password
+DATA_FILE_PATH=/absolute/path/to/organic-food-web-scraper/output/
+```
+
+**Production Deployment:**
+- **Frontend**: Vercel (set `VITE_API_URL` = Railway backend URL)
+- **Backend**: Railway (set `ES_HOST`, `ES_USERNAME`, `ES_PASSWORD`)
 
 
 ---
@@ -361,7 +324,7 @@ export PYTHONPATH="$PWD/backend:$PYTHONPATH"
 .venv/bin/python backend/ingestion/main.py
 ```
 
-### Loading Data to Elasticsearch
+### Loading Data to Bonsai
 
 ```bash
 export PYTHONPATH="$PWD/backend:$PYTHONPATH"
@@ -370,21 +333,13 @@ export PYTHONPATH="$PWD/backend:$PYTHONPATH"
 
 ### Starting Services Manually
 
-**1. Start Elasticsearch:**
-```bash
-docker run -d --name es-mvp -p 9200:9200 \
-  -e "discovery.type=single-node" \
-  -e "xpack.security.enabled=false" \
-  docker.elastic.co/elasticsearch/elasticsearch:7.17.13
-```
-
-**2. Start API Server:**
+**1. Start API Server:**
 ```bash
 export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
 uvicorn backend.api.api_main:app --reload --port 8000
 ```
 
-**3. Start React Web UI:**
+**2. Start React Web UI:**
 ```bash
 cd frontend/react-web
 npm install
@@ -441,21 +396,13 @@ Visit http://localhost:8000/docs for interactive Swagger documentation.
 
 ## Troubleshooting
 
-### Docker Issues
+### Bonsai Connection Issues
 
-**Problem**: `Cannot connect to Docker daemon`
-- **Solution**: Start Docker Desktop application
-
-**Problem**: Port 9200 already in use
-- **Solution**: Stop existing Elasticsearch container: `docker stop es-mvp`
-
-### Elasticsearch Connection Issues
-
-**Problem**: `ConnectionError: Elasticsearch is not reachable`
+**Problem**: `ConnectionError: Search backend not reachable`
 - **Solution**: 
-  1. Check Docker is running: `docker ps`
-  2. Check Elasticsearch is ready: `curl http://localhost:9200`
-  3. Verify `.env` has correct `ES_HOST_LOCAL` setting
+  1. Verify Bonsai cluster is active in dashboard
+  2. Check `.env` has correct `ES_HOST`, `ES_USERNAME`, `ES_PASSWORD`
+  3. Test connection: `curl -u username:password https://your-cluster.bonsaisearch.net`
 
 ### API/UI Not Starting
 
@@ -475,7 +422,7 @@ Visit http://localhost:8000/docs for interactive Swagger documentation.
 - **Solution**: 
   1. Check if data exists: `ls output/*.json`
   2. Load data: `python backend/search_engine/main.py`
-  3. Verify Elasticsearch has data: `curl http://localhost:9200/organic_stores/_count`
+  3. Verify Bonsai has data: `curl -u username:password https://your-cluster.bonsaisearch.net/organic_stores/_count`
 
 ---
 
@@ -494,7 +441,7 @@ python -m unittest tests.search_engine.test_es_client -v
 ### Code Structure
 
 - **Ingestion Layer**: Handles web scraping and data extraction
-- **Search Engine Layer**: Manages Elasticsearch indexing and queries
+- **Search Engine Layer**: Manages Bonsai (OpenSearch) indexing and queries
 - **API Layer**: Provides REST API endpoints
 - **UI Layer**: React TypeScript web application
 
@@ -535,5 +482,5 @@ For questions or suggestions, reach out to [your email or GitHub handle].
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [React Documentation](https://react.dev/)
 - [Vite Documentation](https://vitejs.dev/)
-- [Elasticsearch Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
-- [Docker Documentation](https://docs.docker.com/)
+- [OpenSearch Documentation](https://opensearch.org/docs/)
+- [Bonsai Documentation](https://docs.bonsai.io/)
