@@ -21,17 +21,15 @@ def search_stores(query: str = "", state: str = "", from_: int = 0, size: int = 
         }
     }
 
-    response = es.search(
-        index=index_name,
-        query=search_query,
-        sort=[
+    body = {
+        "query": search_query,
+        "sort": [
             {
                 "_script": {
                     "type": "number",
                     "order": "asc",
                     "script": {
                         "lang": "painless",
-                        # 0 = active (valid_to >= now), 1 = expired (valid_to < now), 2 = missing valid_to (last)
                         "source": """
                             if (doc['valid_to'].size() == 0) return 2;
                             long vt = doc['valid_to'].value.toInstant().toEpochMilli();
@@ -41,16 +39,12 @@ def search_stores(query: str = "", state: str = "", from_: int = 0, size: int = 
                     },
                 }
             },
-            {
-                "valid_to": {
-                    "order": "desc",
-                    "unmapped_type": "date"
-                }
-            },
+            {"valid_to": {"order": "desc", "unmapped_type": "date"}},
         ],
-        from_=from_,
-        size=size
-    )
+        "from": from_,
+        "size": size,
+    }
+    response = es.search(index=index_name, body=body)
 
     hits = response["hits"]["hits"]
     total = response["hits"]["total"]["value"] if isinstance(response["hits"]["total"], dict) else response["hits"]["total"]

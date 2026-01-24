@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Startup script for Organic Food Web Scraper services
-# This script starts Elasticsearch, API server, and React frontend automatically
+# Uses Bonsai (cloud) for Elasticsearch. Starts API server and React frontend only.
 
 set -e
 
@@ -14,70 +14,32 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}🚀 Starting Organic Food Web Scraper Services...${NC}\n"
+echo -e "${GREEN}🚀 Starting Organic Food Web Scraper Services (Bonsai cloud)...${NC}\n"
 
-# Check if Docker is available
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}❌ Docker is not installed or not in PATH${NC}"
-    exit 1
-fi
-
-# Check if Docker daemon is running
-if ! docker ps &> /dev/null; then
-    echo -e "${RED}❌ Docker daemon is not running${NC}"
-    echo -e "${YELLOW}Please start Docker Desktop and wait for it to be ready, then run this script again.${NC}"
-    echo -e "${YELLOW}You can start Docker Desktop from Applications or by running: open -a Docker${NC}"
-    exit 1
-fi
-
-# 1. Start Elasticsearch Docker container
-echo -e "${YELLOW}📦 Step 1: Starting Elasticsearch...${NC}"
-if docker ps -a --format '{{.Names}}' | grep -q "^es-mvp$"; then
-    if docker ps --format '{{.Names}}' | grep -q "^es-mvp$"; then
-        echo -e "${GREEN}✅ Elasticsearch container already running${NC}"
-    else
-        echo -e "${YELLOW}🔄 Starting existing Elasticsearch container...${NC}"
-        docker start es-mvp
-    fi
-else
-    echo -e "${YELLOW}🆕 Creating new Elasticsearch container...${NC}"
-    docker run -d \
-        --name es-mvp \
-        -p 9200:9200 \
-        -e "discovery.type=single-node" \
-        -e "xpack.security.enabled=false" \
-        docker.elastic.co/elasticsearch/elasticsearch:7.17.13
-fi
-
-# Wait for Elasticsearch to be ready
-echo -e "${YELLOW}⏳ Waiting for Elasticsearch to be ready...${NC}"
-for i in {1..60}; do
-    if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ Elasticsearch is ready!${NC}\n"
-        break
-    fi
-    if [ $i -eq 60 ]; then
-        echo -e "${RED}❌ Elasticsearch did not become ready in time${NC}"
-        exit 1
-    fi
-    sleep 1
-done
-
-# 2. Check if data needs to be loaded
-echo -e "${YELLOW}📊 Step 2: Checking Elasticsearch data...${NC}"
-ES_COUNT=$(curl -s http://localhost:9200/organic_stores/_count 2>/dev/null | grep -o '"count":[0-9]*' | cut -d':' -f2 || echo "0")
+# 1. Check Bonsai (cloud) and load data if needed
+echo -e "${YELLOW}📊 Step 1: Checking Bonsai (cloud) data...${NC}"
+export PYTHONPATH="$PROJECT_ROOT/backend:$PYTHONPATH"
+ES_COUNT=$(cd "$PROJECT_ROOT" && "$PROJECT_ROOT/.venv/bin/python" -c '
+import os
+from dotenv import load_dotenv
+load_dotenv()
+if os.getenv("USE_LOCAL_ES", "false").lower() == "true":
+    raise SystemExit("Set USE_LOCAL_ES=false in .env")
+from search_engine.es_client import get_es_client
+es = get_es_client()
+print(es.count(index="organic_stores")["count"] if es.indices.exists(index="organic_stores") else 0)
+' 2>/dev/null) || ES_COUNT="0"
 
 if [ "$ES_COUNT" = "0" ] || [ -z "$ES_COUNT" ]; then
-    echo -e "${YELLOW}📥 No data found. Loading data into Elasticsearch...${NC}"
-    export PYTHONPATH="$PROJECT_ROOT/backend:$PYTHONPATH"
-    "$PROJECT_ROOT/.venv/bin/python" "$PROJECT_ROOT/backend/search_engine/main.py"
+    echo -e "${YELLOW}📥 No data in Bonsai. Loading data...${NC}"
+    cd "$PROJECT_ROOT" && "$PROJECT_ROOT/.venv/bin/python" "$PROJECT_ROOT/backend/search_engine/main.py"
     echo -e "${GREEN}✅ Data loaded!${NC}\n"
 else
-    echo -e "${GREEN}✅ Elasticsearch already has $ES_COUNT documents${NC}\n"
+    echo -e "${GREEN}✅ Bonsai already has $ES_COUNT documents${NC}\n"
 fi
 
-# 3. Start API server
-echo -e "${YELLOW}🌐 Step 3: Starting API server...${NC}"
+# 2. Start API server
+echo -e "${YELLOW}🌐 Step 2: Starting API server...${NC}"
 export PYTHONPATH="$PROJECT_ROOT/backend:$PYTHONPATH"
 
 # Check if API is already running
@@ -100,8 +62,8 @@ else
     echo -e "${YELLOW}⏳ API server is starting... (check logs in api_server.log)${NC}\n"
 fi
 
-# 4. Start React Frontend
-echo -e "${YELLOW}🖥️  Step 4: Starting React Frontend...${NC}"
+# 3. Start React Frontend
+echo -e "${YELLOW}🖥️  Step 3: Starting React Frontend...${NC}"
 
 # Check if Node.js is available
 if ! command -v node &> /dev/null; then
@@ -158,7 +120,7 @@ fi
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}✨ All services started successfully!${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
-echo -e "📊 Elasticsearch: http://localhost:9200"
+echo -e "☁️  Elasticsearch: Bonsai (cloud)"
 echo -e "🌐 API Server:    http://localhost:8000"
 echo -e "📖 API Docs:      http://localhost:8000/docs"
 echo -e "🖥️  Web UI:        http://localhost:5173"

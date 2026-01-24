@@ -1,4 +1,4 @@
-from elasticsearch.helpers import bulk, BulkIndexError
+from opensearchpy.helpers import bulk, BulkIndexError
 from search_engine.es_client import get_es_client
 
 def load_to_elasticsearch(docs, index_name="organic_stores"):

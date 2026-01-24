@@ -49,17 +49,4 @@ if lsof -ti:5173 > /dev/null 2>&1; then
     lsof -ti:5173 | xargs kill -9 2>/dev/null || true
 fi
 
-# Stop Elasticsearch (optional - comment out if you want to keep it running)
-read -p "Do you want to stop Elasticsearch container? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    if docker ps --format '{{.Names}}' | grep -q "^es-mvp$"; then
-        echo -e "${YELLOW}🛑 Stopping Elasticsearch container...${NC}"
-        docker stop es-mvp
-        echo -e "${GREEN}✅ Elasticsearch stopped${NC}"
-    fi
-else
-    echo -e "${YELLOW}ℹ️  Elasticsearch container left running${NC}"
-fi
-
 echo -e "\n${GREEN}✅ All services stopped!${NC}"

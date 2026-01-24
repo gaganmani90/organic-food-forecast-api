@@ -333,30 +333,21 @@ organic-food-web-scraper/
 
 ## Configuration
 
+### Infrastructure Setup
+
+**All environments use Bonsai (OpenSearch cloud)** - no local Elasticsearch.
+
+- **Local development**: Frontend (localhost:5173) + Backend (localhost:8000) → Bonsai cloud
+- **Production**: Same setup, different URLs
+
 ### Environment Variables (.env)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `USE_LOCAL_ES` | Use local Docker Elasticsearch | `true` |
-| `ES_HOST_LOCAL` | Local Elasticsearch URL | `http://localhost:9200` |
-| `ES_HOST` | Production Elasticsearch URL | (required if `USE_LOCAL_ES=false`) |
-| `ES_API_KEY` | Production API key | (required if `USE_LOCAL_ES=false`) |
-| `DATA_FILE_PATH` | Path to scraped JSON files | `output/` |
-| `API_BASE_URL` | API server URL | `http://localhost:8000` |
-
-### Switching Between Local and Production
-
-**Use Local Elasticsearch (Development):**
-```bash
-USE_LOCAL_ES=true
-```
-
-**Use Production Elasticsearch:**
-```bash
 USE_LOCAL_ES=false
-ES_HOST=https://your-elastic-cloud-url:443
-ES_API_KEY=your-api-key
-```
+ES_HOST=https://forgiving-garcinia-1kxfpcz2.us-east-1.bonsaisearch.net
+ES_USERNAME=******
+ES_PASSWORD=***
+DATA_FILE_PATH=/Users/gaganmani/IdeaProjects/organic-food-web-scraper/output/
+
 
 ---
 
