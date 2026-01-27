@@ -12,6 +12,8 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 - 🌐 **REST API**: FastAPI-based API for programmatic access
 - 🖥️ **Web UI**: React TypeScript web application for searching and browsing
 - ☁️ **Cloud Search**: Uses Bonsai (OpenSearch cloud) for all environments
+- ⏰ **Scheduled Scraping**: Automated daily scraping via cron jobs
+- 📅 **Last Refresh Display**: UI shows when data was last updated
 - ✅ **Testing**: Comprehensive unit and integration tests
 
 ---
@@ -67,6 +69,8 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 │  ┌──────────────────────────────────────────────────────┐     │
 │  │              FastAPI Server (Port 8000)               │     │
 │  │  GET /api/search?query=<search_term>                 │     │
+│  │  GET /api/last-refresh                                │     │
+│  │  POST /api/scrape-and-load                            │     │
 │  │  - CORS enabled                                        │     │
 │  │  - Returns up to 10,000 results                       │     │
 │  └──────────────────────────────────────────────────────┘     │
@@ -297,19 +301,40 @@ organic-food-web-scraper/
 - **Local**: Frontend (localhost:5173) + Backend (localhost:8000) → Bonsai cloud
 - **Production**: Vercel (frontend) + Railway (backend) → Bonsai cloud
 
+### Production URLs (Exact Links)
+
+**Frontend (Vercel):**
+- Production URL: Check your Vercel dashboard
+- Vercel Dashboard: https://vercel.com/dashboard
+
+**Backend (Railway):**
+- Production URL: https://organic-food-forecast-api-production.up.railway.app
+- API Docs: https://organic-food-forecast-api-production.up.railway.app/docs
+- Railway Dashboard: https://railway.app/dashboard
+
+**Search Engine (Bonsai):**
+- Cluster URL: https://forgiving-garcinia-1kxfpcz2.us-east-1.bonsaisearch.net
+- Bonsai Dashboard: https://app.bonsai.io
+
+**Scheduled Scraping (Cron Job):**
+- Service: cron-job.org
+- Endpoint: https://organic-food-forecast-api-production.up.railway.app/api/scrape-and-load
+- Schedule: Daily at 2 AM UTC (`0 2 * * *`)
+- Cron Dashboard: https://cron-job.org
+
 ### Environment Variables (.env)
 
 ```bash
 USE_LOCAL_ES=false
-ES_HOST=https://your-bonsai-cluster.us-east-1.bonsaisearch.net
+ES_HOST=https://forgiving-garcinia-1kxfpcz2.us-east-1.bonsaisearch.net
 ES_USERNAME=your-bonsai-username
 ES_PASSWORD=your-bonsai-password
 DATA_FILE_PATH=/absolute/path/to/organic-food-web-scraper/output/
 ```
 
 **Production Deployment:**
-- **Frontend**: Vercel (set `VITE_API_URL` = Railway backend URL)
-- **Backend**: Railway (set `ES_HOST`, `ES_USERNAME`, `ES_PASSWORD`)
+- **Frontend (Vercel)**: Set `VITE_API_URL=https://organic-food-forecast-api-production.up.railway.app`
+- **Backend (Railway)**: Set `ES_HOST`, `ES_USERNAME`, `ES_PASSWORD`, `DATA_FILE_PATH`
 
 
 ---
@@ -318,11 +343,26 @@ DATA_FILE_PATH=/absolute/path/to/organic-food-web-scraper/output/
 
 ### Scraping Data
 
-Scrape data for all states:
+**Option 1: Manual Scraping (Local)**
 ```bash
 export PYTHONPATH="$PWD/backend:$PYTHONPATH"
 .venv/bin/python backend/ingestion/main.py
 ```
+
+**Option 2: API Endpoint (Production)**
+```bash
+# Trigger scraping via API
+curl -X POST https://organic-food-forecast-api-production.up.railway.app/api/scrape-and-load
+
+# Or use GET (also supported)
+curl -X GET https://organic-food-forecast-api-production.up.railway.app/api/scrape-and-load
+```
+
+**Option 3: Scheduled Scraping (Automated)**
+- Configured via cron-job.org
+- Runs daily at 2 AM UTC
+- Endpoint: `POST https://organic-food-forecast-api-production.up.railway.app/api/scrape-and-load`
+- Monitor execution in cron-job.org dashboard
 
 ### Loading Data to Bonsai
 
@@ -350,6 +390,10 @@ Then access http://localhost:5173 in your browser.
 ---
 
 ## API Documentation
+
+### Base URL
+- **Local**: `http://localhost:8000`
+- **Production**: `https://organic-food-forecast-api-production.up.railway.app`
 
 ### Search Endpoint
 
@@ -388,9 +432,57 @@ Response:
 }
 ```
 
+### Last Refresh Endpoint
+
+**GET** `/api/last-refresh`
+
+Returns the last date when data was refreshed.
+
+**Example Request:**
+```bash
+curl https://organic-food-forecast-api-production.up.railway.app/api/last-refresh
+```
+
+**Example Response:**
+```json
+{
+  "last_refresh": "2025-01-23T14:30:15",
+  "last_refresh_formatted": "2025-01-23T14:30:15"
+}
+```
+
+### Scrape and Load Endpoint
+
+**POST** or **GET** `/api/scrape-and-load`
+
+Triggers scraping for all 36 states and automatically loads data into Bonsai.
+
+**Example Request:**
+```bash
+curl -X POST https://organic-food-forecast-api-production.up.railway.app/api/scrape-and-load
+```
+
+**Example Response:**
+```json
+{
+  "status": "success",
+  "message": "Scraping completed successfully. Loaded 5000 records.",
+  "total_states": 36,
+  "successful_states": 36,
+  "failed_states": 0,
+  "total_records": 5000,
+  "records_loaded": 5000,
+  "errors": null
+}
+```
+
+**Note**: This endpoint may take 20-60+ minutes to complete. The response is returned after scraping finishes.
+
 ### Interactive API Docs
 
-Visit http://localhost:8000/docs for interactive Swagger documentation.
+Access interactive API documentation (Swagger UI):
+- **Local**: http://localhost:8000/docs
+- **Production**: https://organic-food-forecast-api-production.up.railway.app/docs
 
 ---
 
