@@ -6,10 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_organic_store_data_from_file():
-    folder_path = os.getenv("DATA_FILE_PATH")
-
-    if not folder_path:
-        raise ValueError("DATA_FILE_PATH not set in .env")
+    # Default to "output" directory where scraper saves files
+    # DATA_FILE_PATH can be set to override this default
+    folder_path = os.getenv("DATA_FILE_PATH", "output")
 
     # Resolve absolute path
     abs_folder_path = os.path.abspath(folder_path)
