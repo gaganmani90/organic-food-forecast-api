@@ -1,8 +1,27 @@
+import os
+import json
+import logging
+from datetime import datetime
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 from search_engine.search import search_stores
+from search_engine.es_client import get_es_client
+from search_engine.index_setup import create_index
+from search_engine.loader import load_to_elasticsearch
+from search_engine.loaders.file_loader import get_organic_store_data_from_file
+from ingestion.managers.scraper_manager import ScraperManager
+from ingestion.scrappers.base_scrapper import STATE_CODES
+from ingestion.scrappers.organic_scraper import OrganicFoodScraper
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -14,6 +33,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/api/search")
 async def search(
@@ -42,3 +62,146 @@ async def search(
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.get("/api/last-refresh")
+async def get_last_refresh():
+    """
+    Get the last date when data was refreshed from metadata document.
+    """
+    try:
+        es = get_es_client()
+        
+        # Get the metadata document with fixed ID
+        try:
+            response = es.get(index="organic_stores", id="_metadata")
+            last_refresh = response["_source"].get("last_refresh")
+            return {
+                "last_refresh": last_refresh,
+                "last_refresh_formatted": last_refresh
+            }
+        except Exception:
+            # Metadata document doesn't exist yet
+            return {
+                "last_refresh": None,
+                "last_refresh_formatted": None
+            }
+    except Exception as e:
+        logger.error(f"Error getting last refresh date: {e}", exc_info=True)
+        return {"error": str(e), "last_refresh": None}
+
+
+@app.post("/api/scrape-and-load")
+async def scrape_and_load():
+    """
+    Scrape organic food certification data for all states and load into Bonsai.
+    """
+    
+    total_states = len(STATE_CODES)
+    successful_states = 0
+    failed_states = 0
+    errors = []
+    total_records_scraped = 0
+    
+    # Step 1: Ensure output directory exists
+    output_dir = os.getenv("DATA_FILE_PATH", "output")
+    os.makedirs(output_dir, exist_ok=True)
+    logger.info(f"Output directory set to: {output_dir}")
+    
+    # Step 2: Scrape data for all states
+    logger.info(f"Starting scraping for {total_states} states...")
+    
+    for state in STATE_CODES:
+        try:
+            logger.info(f"Scraping state: {state}")
+            scraper = OrganicFoodScraper(state)
+            manager = ScraperManager(scraper, f"{state}_organic_food_certifications")
+            manager.scrape(max_pages=50, force_scrape=True)
+            
+            # Count records for this state
+            output_file = os.path.join("output", f"{state}_organic_food_certifications.json")
+            if os.path.exists(output_file):
+                with open(output_file, "r", encoding="utf-8") as f:
+                    state_data = json.load(f)
+                    record_count = len(state_data) if isinstance(state_data, list) else 0
+                    total_records_scraped += record_count
+                    logger.info(f"State {state}: Scraped {record_count} records")
+            
+            successful_states += 1
+            logger.info(f"Successfully completed scraping for state: {state}")
+        except Exception as e:
+            failed_states += 1
+            error_msg = f"State {state}: {str(e)}"
+            errors.append(error_msg)
+            logger.error(f"Error scraping state {state}: {e}", exc_info=True)
+    
+    # Step 3: Create/ensure index exists
+    try:
+        logger.info("Creating/verifying Bonsai index...")
+        create_index()
+        logger.info("Index created/verified successfully")
+    except Exception as e:
+        error_msg = f"Index creation: {str(e)}"
+        errors.append(error_msg)
+        logger.error(f"Failed to create/verify index: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "message": "Failed to create/verify index",
+            "total_states": total_states,
+            "successful_states": successful_states,
+            "failed_states": failed_states,
+            "total_records": total_records_scraped,
+            "records_loaded": 0,
+            "errors": errors
+        }
+    
+    # Step 4: Load all scraped data into Bonsai
+    records_loaded = 0
+    try:
+        logger.info("Loading scraped data from files...")
+        docs = get_organic_store_data_from_file()
+        logger.info(f"Found {len(docs)} documents to load into Bonsai")
+        load_to_elasticsearch(docs)
+        records_loaded = len(docs)
+        logger.info(f"Successfully loaded {records_loaded} records into Bonsai")
+        
+        # Store metadata with last refresh timestamp
+        if records_loaded > 0:
+            es = get_es_client()
+            metadata = {
+                "last_refresh": datetime.now().isoformat(),
+                "records_count": records_loaded,
+                "successful_states": successful_states,
+                "total_states": total_states
+            }
+            es.index(index="organic_stores", id="_metadata", body=metadata)
+            logger.info("Metadata updated with last refresh timestamp")
+    except Exception as e:
+        error_msg = f"Data loading: {str(e)}"
+        errors.append(error_msg)
+        logger.error(f"Error loading data into Bonsai: {e}", exc_info=True)
+    
+    # Determine overall status
+    if failed_states == 0 and records_loaded > 0:
+        overall_status = "success"
+        message = f"Scraping completed successfully. Loaded {records_loaded} records."
+        logger.info(f"Scraping job completed successfully: {successful_states}/{total_states} states, {records_loaded} records loaded")
+    elif successful_states > 0:
+        overall_status = "partial"
+        message = f"Scraping completed with {failed_states} state(s) failed. Loaded {records_loaded} records."
+        logger.warning(f"Scraping job completed with partial success: {successful_states}/{total_states} states succeeded, {failed_states} failed, {records_loaded} records loaded")
+    else:
+        overall_status = "error"
+        message = "Scraping failed for all states."
+        logger.error(f"Scraping job failed completely: {failed_states}/{total_states} states failed")
+    
+    return {
+        "status": overall_status,
+        "message": message,
+        "total_states": total_states,
+        "successful_states": successful_states,
+        "failed_states": failed_states,
+        "total_records": total_records_scraped,
+        "records_loaded": records_loaded,
+        "errors": errors if errors else None
+    }

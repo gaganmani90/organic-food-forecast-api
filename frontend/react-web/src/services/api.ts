@@ -10,11 +10,21 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
+export interface LastRefreshResponse {
+  last_refresh: string | null;
+  last_refresh_formatted: string | null;
+  error?: string;
+}
+
 export const api = {
   search: async (query: string, page: number = 1, pageSize: number = 20): Promise<SearchResponse> => {
     const response = await apiClient.get<SearchResponse>('/api/search', {
       params: { query, page, page_size: pageSize },
     });
+    return response.data;
+  },
+  getLastRefresh: async (): Promise<LastRefreshResponse> => {
+    const response = await apiClient.get<LastRefreshResponse>('/api/last-refresh');
     return response.data;
   },
 };
