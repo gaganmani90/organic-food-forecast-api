@@ -188,9 +188,9 @@ def run_scraping_task():
         except Exception as e:
             error_msg = f"Index creation: {str(e)}"
             errors.append(error_msg)
-        logger.error(f"Failed to create/verify index: {e}", exc_info=True)
-        update_job_status("failed", "Failed to create/verify index", {"error": str(e)})
-        return
+            logger.error(f"Failed to create/verify index: {e}", exc_info=True)
+            update_job_status("failed", "Failed to create/verify index", {"error": str(e)})
+            return
         
         # Step 4: Load all scraped data into Bonsai
         records_loaded = 0
