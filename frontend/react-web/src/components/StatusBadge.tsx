@@ -10,7 +10,7 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
 
   if (isExpired) {
     return (
-      <Badge variant="danger" icon="⚠️">
+      <Badge variant="danger">
         Expired
       </Badge>
     );
@@ -25,7 +25,7 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
   }
 
   return (
-    <Badge variant="success" icon="✅">
+    <Badge variant="success">
       Active
     </Badge>
   );
