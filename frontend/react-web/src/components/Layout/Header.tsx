@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Link } from 'react-router-dom';
+import { Analytics } from "@vercel/analytics/react";
 
 export const Header = () => {
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export const Header = () => {
           <p className="text-sm text-green-100">Search certified organic food stores across India</p>
         </div>
       </nav>
+      <Analytics />
     </header>
   );
 };
