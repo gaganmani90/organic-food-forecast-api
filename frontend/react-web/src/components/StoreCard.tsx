@@ -1,24 +1,17 @@
 import { Store } from '../types/store';
+import { StatusBadge } from './StatusBadge';
+import { ProductList } from './ProductList';
+import { getCertificationStatus } from '../utils/certificationUtils';
+import { formatDate } from '../utils/dateUtils';
+import { parseProducts } from '../utils/productUtils';
 
 interface StoreCardProps {
   store: Store;
 }
 
 export const StoreCard = ({ store }: StoreCardProps) => {
-  const productList = store.products
-    .split(',')
-    .map((p) => p.trim())
-    .filter((p) => p);
-
-  const validTo = new Date(store.valid_to);
-  const isExpired = validTo < new Date();
-  const isExpiringSoon = validTo < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-
-  const getStatusColor = () => {
-    if (isExpired) return 'bg-red-100 text-red-800';
-    if (isExpiringSoon) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-green-100 text-green-800';
-  };
+  const productList = parseProducts(store.products);
+  const status = getCertificationStatus(store.valid_to);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -26,9 +19,7 @@ export const StoreCard = ({ store }: StoreCardProps) => {
         <h3 className="text-xl font-semibold text-gray-900">
           {store.store_name}
         </h3>
-        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor()}`}>
-          {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Active'}
-        </span>
+        <StatusBadge status={status} />
       </div>
 
       <div className="space-y-2 text-sm text-gray-600">
@@ -56,25 +47,14 @@ export const StoreCard = ({ store }: StoreCardProps) => {
           {store.certification_body}
         </p>
         <p>
-          <span className="font-medium">📅 Valid From:</span> {store.valid_from}
+          <span className="font-medium">📅 Valid From:</span> {formatDate(store.valid_from)}
         </p>
         <p>
-          <span className="font-medium">📅 Valid To:</span> {store.valid_to}
+          <span className="font-medium">📅 Valid To:</span> {formatDate(store.valid_to)}
         </p>
       </div>
 
-      <details className="mt-4">
-        <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
-          📦 View Products ({productList.length})
-        </summary>
-        <ul className="mt-2 space-y-1 pl-4">
-          {productList.map((product, index) => (
-            <li key={index} className="text-sm text-gray-600">
-              • {product}
-            </li>
-          ))}
-        </ul>
-      </details>
+      <ProductList products={productList} />
     </div>
   );
 };
