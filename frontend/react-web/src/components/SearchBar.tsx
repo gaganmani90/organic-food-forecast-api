@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState, FormEvent } from 'react';
+import { ClearButton } from './ClearButton';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   loading?: boolean;
+  centered?: boolean;  
+  value?: string; 
 }
 
 const RECENT_KEY = 'recentSearches';
@@ -34,15 +37,16 @@ function saveRecent(query: string) {
   }
 }
 
-export const SearchBar = ({ onSearch, loading = false }: SearchBarProps) => {
-  const [query, setQuery] = useState<string>('');
+export const SearchBar = ({ onSearch, loading = false, centered = false, value = '' }: SearchBarProps) => {
+  const [query, setQuery] = useState<string>(value);
   const [recent, setRecent] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
 
   useEffect(() => {
     setRecent(loadRecent());
-  }, []);
+    setQuery(value);
+  }, [value]);
 
   const filteredRecent = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -74,9 +78,10 @@ export const SearchBar = ({ onSearch, loading = false }: SearchBarProps) => {
   };
 
   return (
-    <div className="relative mb-8">
-      <form onSubmit={handleSubmit} className="flex gap-4">
-        <input
+    <div className={`relative mb-8 ${centered ? 'w-full max-w-2xl mx-auto' : 'w-full'}`}>
+      <form onSubmit={handleSubmit} className={`flex ${centered ? 'flex-col items-center gap-4' : 'items-center gap-3'}`}>
+        <div className="relative w-full">
+          <input
           type="text"
           value={query}
           onChange={(e) => {
@@ -121,15 +126,29 @@ export const SearchBar = ({ onSearch, loading = false }: SearchBarProps) => {
             }
           }}
           placeholder="Search stores, products, addresses..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          disabled={loading}
+          className={`w-full border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm ${
+            centered 
+              ? 'text-lg px-6 py-4 rounded-full' 
+              : 'text-base px-5 py-3 rounded-full max-w-2xl'
+          }`}disabled={loading}
         />
+          {query && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <ClearButton
+                onClick={() => {
+                  setQuery('');
+                  setOpen(false);
+                  setActiveIndex(-1);
+                }}
+              />
+            </div>
+          )}
+        </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+          className={`${centered ? 'px-8 py-3 text-base' : 'px-6 py-3 text-base'} bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed`}>
           {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
