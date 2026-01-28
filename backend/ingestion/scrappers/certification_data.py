@@ -1,5 +1,6 @@
 from datetime import datetime
 import uuid
+import re
 
 def parse_date(raw: str) -> str:
     try:
@@ -13,10 +14,19 @@ def parse_date(raw: str) -> str:
         return None
 
 
+def clean_store_name(name: str) -> str:
+    """Remove 'Certified' suffix from store name if present."""
+    if not name:
+        return name
+    # Remove trailing "Certified" (case-insensitive, with optional whitespace)
+    cleaned = re.sub(r'\s+[Cc]ertified\s*$', '', name.strip())
+    return cleaned
+
+
 class CertificationData:
     """Data model for certification records."""
     def __init__(self, name, cert_id, location, email, address, certifying_agency, valid_from, valid_to, products):
-        self.name = name
+        self.name = clean_store_name(name)
         self.cert_id = cert_id
         self.location = location
         self.email = email
@@ -44,6 +54,3 @@ class CertificationData:
             "products": ", ".join(self.products),
             "scraped_at": self.scraped_timestamp
         }
-
-    from datetime import datetime
-

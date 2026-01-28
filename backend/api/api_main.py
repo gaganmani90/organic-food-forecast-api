@@ -23,14 +23,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def get_allowed_origins():
+    """Get allowed origins from environment variable."""
+    origins_env = os.getenv("ALLOWED_ORIGINS", "")
+    
+    if origins_env:
+        # Split comma-separated list and strip whitespace
+        origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+        return origins
+    
+    # Default: allow localhost for development
+    return ["http://localhost:5173", "http://localhost:3000"]
+
 app = FastAPI()
 
 # Enable CORS for frontend
+# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your frontend domain in production
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
