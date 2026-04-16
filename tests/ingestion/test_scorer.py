@@ -34,16 +34,27 @@ class TestHasEmailRule(unittest.TestCase):
         result = compute_score(email="   ")
         self.assertFalse(result["breakdown"]["has_email"])
 
-    # --- malformed / concatenated emails must NOT score ---
+    # --- comma-separated: first valid address is used ---
+
+    def test_comma_separated_first_valid_scores(self):
+        # "alka@swanispice.com, ravi@swanispice.com" → first is valid → scores
+        self.assertTrue(compute_score(email="alka@swanispice.com, ravi@swanispice.com")["breakdown"]["has_email"])
+
+    def test_comma_first_invalid_second_valid_uses_second(self):
+        # first candidate "bad" is invalid; second "good@foo.com" is valid
+        self.assertTrue(compute_score(email="bad, good@foo.com")["breakdown"]["has_email"])
+
+    def test_all_invalid_comma_list_does_not_score(self):
+        # neither candidate passes → no score
+        self.assertFalse(compute_score(email="bad1, bad2")["breakdown"]["has_email"])
+
+    # --- hard malformed: no valid candidate at all ---
 
     def test_slash_concatenated_emails_do_not_score(self):
-        # e.g. "mayank@sunatura.in/vikram@sunatura.in"
+        # "mayank@sunatura.in/vikram@sunatura.in" — slash is illegal inside an address
         self.assertFalse(compute_score(email="mayank@sunatura.in/vikram@sunatura.in")["breakdown"]["has_email"])
 
-    def test_comma_concatenated_emails_do_not_score(self):
-        self.assertFalse(compute_score(email="a@foo.com,b@bar.com")["breakdown"]["has_email"])
-
-    def test_space_in_email_does_not_score(self):
+    def test_space_in_single_email_does_not_score(self):
         self.assertFalse(compute_score(email="a @foo.com")["breakdown"]["has_email"])
 
     def test_multiple_at_does_not_score(self):
@@ -53,7 +64,6 @@ class TestHasEmailRule(unittest.TestCase):
         self.assertFalse(compute_score(email="notanemail")["breakdown"]["has_email"])
 
     def test_missing_domain_tld_does_not_score(self):
-        # domain has no dot
         self.assertFalse(compute_score(email="user@localhost")["breakdown"]["has_email"])
 
     def test_semicolon_separator_does_not_score(self):
@@ -101,13 +111,17 @@ class TestOwnDomainEmailRule(unittest.TestCase):
         # Real bug: "mayank@sunatura.in/vikram@sunatura.in"
         self.assertFalse(compute_score(email="mayank@sunatura.in/vikram@sunatura.in")["breakdown"]["has_website"])
 
-    def test_comma_joined_does_not_score(self):
-        # "alka@swanispice.com,alka@swanispice.com"
-        self.assertFalse(compute_score(email="alka@swanispice.com,alka@swanispice.com")["breakdown"]["has_website"])
+    def test_comma_joined_own_domain_scores(self):
+        # First valid address in comma list is "alka@swanispice.com" → own domain → scores
+        self.assertTrue(compute_score(email="alka@swanispice.com,alka@swanispice.com")["breakdown"]["has_website"])
 
-    def test_space_comma_url_garbage_does_not_score(self):
-        # "swanispice.com, alka/" style garbage
-        self.assertFalse(compute_score(email="info@swanispice.com, alka/")["breakdown"]["has_website"])
+    def test_comma_joined_own_domain_second_entry_scores(self):
+        # First is invalid, second "info@swanispice.com" is a valid own-domain address
+        self.assertTrue(compute_score(email="alka/, info@swanispice.com")["breakdown"]["has_website"])
+
+    def test_space_comma_all_garbage_does_not_score(self):
+        # No valid candidate in the list
+        self.assertFalse(compute_score(email="alka/, badentry")["breakdown"]["has_website"])
 
     def test_multiple_at_does_not_score_for_website(self):
         self.assertFalse(compute_score(email="a@b@company.in")["breakdown"]["has_website"])

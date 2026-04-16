@@ -64,43 +64,61 @@ _GENERIC_EMAIL_DOMAINS: frozenset[str] = frozenset({
     "outlook.com", "live.com", "icloud.com",
 })
 
-# Characters that are never valid in a well-formed single email address.
-_EMAIL_ILLEGAL_CHARS: frozenset[str] = frozenset({"/", " ", ",", ";", "\t"})
+# Characters that are illegal *within* a single email address (but comma is
+# used as a list separator so we handle it at the extraction layer, not here).
+_EMAIL_ILLEGAL_CHARS: frozenset[str] = frozenset({"/", " ", ";", "\t"})
 
 
-def _parse_clean_email(raw: Optional[str]) -> Optional[str]:
-    """Return the email string if it is a valid, single RFC-ish address.
+def _validate_single_email(email: str) -> Optional[str]:
+    """Validate one email string in isolation.
 
     Rules (strict but pragmatic):
-      - Must contain exactly one '@'.
-      - No characters from _EMAIL_ILLEGAL_CHARS anywhere in the string.
-      - Local part (before '@') must be non-empty.
-      - Domain part (after '@') must contain at least one '.' and have a
-        non-empty label on each side of it.
+      - No characters from _EMAIL_ILLEGAL_CHARS.
+      - Exactly one '@'.
+      - Non-empty local part.
+      - Domain part contains at least one '.' with non-empty labels.
 
-    Returns None when any rule is violated, so callers never need to worry
-    about garbage data propagating.
+    Returns the cleaned email on success, None on failure.
     """
-    if not raw:
-        return None
-    email = raw.strip()
+    email = email.strip()
     if not email:
         return None
-    # Reject multi-email concatenations and illegal chars
     if any(c in email for c in _EMAIL_ILLEGAL_CHARS):
         return None
-    # Exactly one '@'
     parts = email.split("@")
     if len(parts) != 2:
         return None
     local, domain = parts
     if not local or not domain:
         return None
-    # Domain must look like  something.tld
     domain_parts = domain.split(".")
     if len(domain_parts) < 2 or not all(domain_parts):
         return None
     return email
+
+
+def _parse_clean_email(raw: Optional[str]) -> Optional[str]:
+    """Extract and validate the first usable email from a raw field value.
+
+    The source data sometimes stores multiple addresses separated by commas
+    (e.g. "alka@foo.com, ravi@foo.com") or slashes (garbage concatenation).
+    Strategy:
+      1. Split on commas to get candidate addresses.
+      2. Return the first candidate that passes _validate_single_email.
+      3. Return None if no candidate is valid.
+
+    This means we never silently discard a store that has at least one good
+    address — we just use the first clean one.
+    """
+    if not raw:
+        return None
+    # Split on comma to handle "a@foo.com, b@bar.com" style multi-email fields
+    candidates = raw.split(",")
+    for candidate in candidates:
+        result = _validate_single_email(candidate)
+        if result is not None:
+            return result
+    return None
 
 
 class HasEmailRule(ScoringRule):

@@ -15,26 +15,35 @@ const toTitleCase = (str: string): string => {
 };
 
 /**
- * Returns the bare domain (e.g. "sowfresh.in") only when the email is a
- * single, well-formed address.  Returns null for anything ambiguous so we
- * never construct a broken URL.
- *
- * Rejects: multiple '@', slashes, commas, spaces, and any domain that
- * doesn't look like  something.tld.
+ * Validate a single email candidate (no commas — already split by caller).
+ * Returns the domain on success, null on failure.
+ * Rejects: slashes, spaces, semicolons, tabs, multiple '@', missing TLD.
  */
-const extractDomain = (email: string | undefined): string | null => {
-  if (!email) return null;
-  const trimmed = email.trim();
-  // Reject illegal characters that indicate concatenated / malformed emails
-  if (/[/,; \t]/.test(trimmed)) return null;
+const validateSingleEmail = (candidate: string): string | null => {
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
+  if (/[/; \t]/.test(trimmed)) return null;  // illegal chars within one address
   const parts = trimmed.split('@');
   if (parts.length !== 2) return null;
   const [local, domain] = parts;
   if (!local || !domain) return null;
-  // Domain must have at least one dot with non-empty labels on each side
   const domainParts = domain.split('.');
   if (domainParts.length < 2 || domainParts.some(p => p === '')) return null;
   return domain.toLowerCase();
+};
+
+/**
+ * Extract the domain from the first valid email in the field.
+ * Handles comma-separated lists like "alka@foo.com, ravi@foo.com".
+ * Returns null if no valid address is found (so no broken URL is built).
+ */
+const extractDomain = (email: string | undefined): string | null => {
+  if (!email) return null;
+  for (const candidate of email.split(',')) {
+    const domain = validateSingleEmail(candidate);
+    if (domain) return domain;
+  }
+  return null;
 };
 
 interface StoreCardProps {
