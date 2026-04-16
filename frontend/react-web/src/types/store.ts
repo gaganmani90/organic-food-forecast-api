@@ -9,6 +9,8 @@ export interface Store {
   valid_to: string;
   products: string;
   scraped_at: string;
+  score?: number;
+  has_website?: boolean;
   location?: {
     lat: number;
     lon: number;

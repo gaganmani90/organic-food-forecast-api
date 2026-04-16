@@ -40,6 +40,18 @@ export const StoreCard = ({ store }: StoreCardProps) => {
           <span className="font-medium">📅 Valid:</span>{' '}
           {formatDate(store.valid_from)} → {formatDate(store.valid_to)}
         </p>
+        {store.has_website && store.email && (
+          <p>
+            <a
+              href={`https://${store.email.split('@')[1]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
+            >
+              🌐 Visit Website
+            </a>
+          </p>
+        )}
       </div>
 
       {showDetails && (

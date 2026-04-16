@@ -1,6 +1,7 @@
 from datetime import datetime
 import uuid
 import re
+from ingestion.scoring.scorer import compute_score
 
 def parse_date(raw: str) -> str:
     try:
@@ -42,6 +43,9 @@ class CertificationData:
         cert_id = self.cert_id.strip() if self.cert_id else ""
         if not cert_id:
             cert_id = f"auto-{uuid.uuid4()}"
+
+        scoring = compute_score(email=self.email)
+
         return {
             "store_name": self.name,
             "certification_id": cert_id,
@@ -52,5 +56,7 @@ class CertificationData:
             "valid_from": parse_date(self.valid_from),
             "valid_to": parse_date(self.valid_to),
             "products": ", ".join(self.products),
-            "scraped_at": self.scraped_timestamp
+            "scraped_at": self.scraped_timestamp,
+            "score": scoring["score"],
+            "has_website": scoring["has_website"],
         }

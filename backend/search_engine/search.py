@@ -24,6 +24,9 @@ def search_stores(query: str = "", state: str = "", from_: int = 0, size: int = 
     body = {
         "query": search_query,
         "sort": [
+            # 1. Higher score first (stores with websites rank higher)
+            {"score": {"order": "desc", "unmapped_type": "integer"}},
+            # 2. Active before expired
             {
                 "_script": {
                     "type": "number",
@@ -39,6 +42,7 @@ def search_stores(query: str = "", state: str = "", from_: int = 0, size: int = 
                     },
                 }
             },
+            # 3. Soonest expiry last within active group
             {"valid_to": {"order": "desc", "unmapped_type": "date"}},
         ],
         "from": from_,

@@ -16,7 +16,9 @@ def create_index(index_name="organic_stores"):
                 "valid_from": {"type": "date"},
                 "valid_to": {"type": "date"},
                 "products": {"type": "text"},
-                "scraped_at": {"type": "date"}
+                "scraped_at": {"type": "date"},
+                "score": {"type": "integer"},
+                "has_website": {"type": "boolean"}
             }
         }
     }
