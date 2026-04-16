@@ -1,72 +1,201 @@
 import unittest
-from ingestion.scoring.scorer import compute_score
+from datetime import date, timedelta
+
+from ingestion.scoring.rules import StoreData
+from ingestion.scoring.scorer import compute_score, MAX_SCORE, RULES, StoreScorer
 
 
-class TestComputeScore(unittest.TestCase):
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-    # --- has_website / own-domain email (+20) ---
+def future_date(days: int) -> str:
+    return (date.today() + timedelta(days=days)).isoformat()
 
-    def test_own_domain_email_scores_20(self):
-        result = compute_score(email="komal.jain@sowfresh.in")
-        self.assertEqual(result["score"], 20)
+def past_date(days: int) -> str:
+    return (date.today() - timedelta(days=days)).isoformat()
+
+
+# ---------------------------------------------------------------------------
+# HasEmailRule (+5)
+# ---------------------------------------------------------------------------
+
+class TestHasEmailRule(unittest.TestCase):
+
+    def test_real_email_scores(self):
+        result = compute_score(email="owner@gmail.com")
+        self.assertTrue(result["breakdown"]["has_email"])
+
+    def test_none_email_does_not_score(self):
+        result = compute_score(email=None)
+        self.assertFalse(result["breakdown"]["has_email"])
+
+    def test_empty_email_does_not_score(self):
+        result = compute_score(email="   ")
+        self.assertFalse(result["breakdown"]["has_email"])
+
+
+# ---------------------------------------------------------------------------
+# OwnDomainEmailRule (+20)
+# ---------------------------------------------------------------------------
+
+class TestOwnDomainEmailRule(unittest.TestCase):
+
+    def test_own_domain_scores(self):
+        result = compute_score(email="komal@sowfresh.in")
+        self.assertTrue(result["breakdown"]["has_website"])
         self.assertTrue(result["has_website"])
 
-    def test_gmail_scores_0(self):
-        result = compute_score(email="owner@gmail.com")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_gmail_does_not_score(self):
+        self.assertFalse(compute_score(email="owner@gmail.com")["breakdown"]["has_website"])
 
-    def test_yahoo_scores_0(self):
-        result = compute_score(email="store@yahoo.com")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_yahoo_does_not_score(self):
+        self.assertFalse(compute_score(email="owner@yahoo.com")["breakdown"]["has_website"])
 
-    def test_yahoo_in_scores_0(self):
-        result = compute_score(email="store@yahoo.in")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_yahoo_in_does_not_score(self):
+        self.assertFalse(compute_score(email="owner@yahoo.in")["breakdown"]["has_website"])
 
-    def test_rediff_scores_0(self):
-        result = compute_score(email="owner@rediffmail.com")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_hotmail_does_not_score(self):
+        self.assertFalse(compute_score(email="owner@hotmail.com")["breakdown"]["has_website"])
 
-    def test_hotmail_scores_0(self):
-        result = compute_score(email="store@hotmail.com")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_rediff_does_not_score(self):
+        self.assertFalse(compute_score(email="owner@rediffmail.com")["breakdown"]["has_website"])
 
-    def test_outlook_scores_0(self):
-        result = compute_score(email="store@outlook.com")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_outlook_does_not_score(self):
+        self.assertFalse(compute_score(email="owner@outlook.com")["breakdown"]["has_website"])
 
-    # --- edge cases ---
+    def test_no_email_does_not_score(self):
+        self.assertFalse(compute_score(email=None)["breakdown"]["has_website"])
 
-    def test_no_email_scores_0(self):
-        result = compute_score(email=None)
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+    def test_malformed_email_does_not_score(self):
+        self.assertFalse(compute_score(email="notanemail")["breakdown"]["has_website"])
 
-    def test_empty_email_scores_0(self):
-        result = compute_score(email="")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
 
-    def test_malformed_email_scores_0(self):
-        result = compute_score(email="notanemail")
-        self.assertEqual(result["score"], 0)
-        self.assertFalse(result["has_website"])
+# ---------------------------------------------------------------------------
+# HasAddressRule (+3)
+# ---------------------------------------------------------------------------
+
+class TestHasAddressRule(unittest.TestCase):
+
+    def test_address_present_scores(self):
+        result = compute_score(address="Farm no.9, Gurgaon, Haryana")
+        self.assertTrue(result["breakdown"]["has_address"])
+
+    def test_none_address_does_not_score(self):
+        self.assertFalse(compute_score(address=None)["breakdown"]["has_address"])
+
+    def test_empty_address_does_not_score(self):
+        self.assertFalse(compute_score(address="  ")["breakdown"]["has_address"])
+
+
+# ---------------------------------------------------------------------------
+# HasProductsRule (+5)
+# ---------------------------------------------------------------------------
+
+class TestHasProductsRule(unittest.TestCase):
+
+    def test_products_present_scores(self):
+        result = compute_score(products="Rice, Wheat")
+        self.assertTrue(result["breakdown"]["has_products"])
+
+    def test_none_products_does_not_score(self):
+        self.assertFalse(compute_score(products=None)["breakdown"]["has_products"])
+
+    def test_empty_products_does_not_score(self):
+        self.assertFalse(compute_score(products="")["breakdown"]["has_products"])
+
+
+# ---------------------------------------------------------------------------
+# HasTenPlusProductsRule (+5)
+# ---------------------------------------------------------------------------
+
+class TestHasTenPlusProductsRule(unittest.TestCase):
+
+    def test_ten_products_scores(self):
+        products = ", ".join([f"Product {i}" for i in range(10)])
+        self.assertTrue(compute_score(products=products)["breakdown"]["has_ten_plus_products"])
+
+    def test_eleven_products_scores(self):
+        products = ", ".join([f"Product {i}" for i in range(11)])
+        self.assertTrue(compute_score(products=products)["breakdown"]["has_ten_plus_products"])
+
+    def test_nine_products_does_not_score(self):
+        products = ", ".join([f"Product {i}" for i in range(9)])
+        self.assertFalse(compute_score(products=products)["breakdown"]["has_ten_plus_products"])
+
+    def test_no_products_does_not_score(self):
+        self.assertFalse(compute_score(products=None)["breakdown"]["has_ten_plus_products"])
+
+
+# ---------------------------------------------------------------------------
+# CertValidOverSixMonthsRule (+10)
+# ---------------------------------------------------------------------------
+
+class TestCertValidOverSixMonthsRule(unittest.TestCase):
+
+    def test_valid_over_six_months_scores(self):
+        result = compute_score(valid_to=future_date(200))
+        self.assertTrue(result["breakdown"]["cert_valid_over_six_months"])
+
+    def test_valid_exactly_six_months_does_not_score(self):
+        result = compute_score(valid_to=future_date(180))
+        self.assertFalse(result["breakdown"]["cert_valid_over_six_months"])
+
+    def test_valid_under_six_months_does_not_score(self):
+        result = compute_score(valid_to=future_date(90))
+        self.assertFalse(result["breakdown"]["cert_valid_over_six_months"])
+
+    def test_expired_does_not_score(self):
+        result = compute_score(valid_to=past_date(30))
+        self.assertFalse(result["breakdown"]["cert_valid_over_six_months"])
+
+    def test_none_valid_to_does_not_score(self):
+        self.assertFalse(compute_score(valid_to=None)["breakdown"]["cert_valid_over_six_months"])
+
+    def test_malformed_date_does_not_score(self):
+        self.assertFalse(compute_score(valid_to="not-a-date")["breakdown"]["cert_valid_over_six_months"])
+
+
+# ---------------------------------------------------------------------------
+# Aggregate / ScoreResult
+# ---------------------------------------------------------------------------
+
+class TestScoreAggregate(unittest.TestCase):
 
     def test_default_score_is_zero(self):
-        """Every store starts at 0 before any criteria are met."""
-        result = compute_score(email=None)
+        result = compute_score()
         self.assertEqual(result["score"], 0)
 
-    def test_returns_score_and_has_website_keys(self):
-        result = compute_score(email="test@example.com")
+    def test_perfect_store_scores_max(self):
+        result = compute_score(
+            email="owner@organicfarm.in",
+            products=", ".join([f"Product {i}" for i in range(15)]),
+            address="123 Farm Road, Gurgaon",
+            valid_to=future_date(365),
+        )
+        self.assertEqual(result["score"], MAX_SCORE)
+
+    def test_breakdown_contains_all_rule_keys(self):
+        result = compute_score()
+        expected_keys = {r.key for r in RULES}
+        self.assertEqual(set(result["breakdown"].keys()), expected_keys)
+
+    def test_result_contains_required_keys(self):
+        result = compute_score()
         self.assertIn("score", result)
         self.assertIn("has_website", result)
+        self.assertIn("breakdown", result)
+
+    def test_score_equals_sum_of_passing_rules(self):
+        result = compute_score(
+            email="owner@organicfarm.in",
+            address="123 Farm Road",
+        )
+        expected = sum(
+            r.points for r in RULES
+            if result["breakdown"].get(r.key)
+        )
+        self.assertEqual(result["score"], expected)
 
 
 if __name__ == "__main__":

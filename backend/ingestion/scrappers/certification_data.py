@@ -44,7 +44,15 @@ class CertificationData:
         if not cert_id:
             cert_id = f"auto-{uuid.uuid4()}"
 
-        scoring = compute_score(email=self.email)
+        products_str = ", ".join(self.products)
+        valid_to_parsed = parse_date(self.valid_to)
+
+        scoring = compute_score(
+            email=self.email,
+            products=products_str,
+            address=self.address,
+            valid_to=valid_to_parsed,
+        )
 
         return {
             "store_name": self.name,
@@ -54,8 +62,8 @@ class CertificationData:
             "address": self.address,
             "certification_body": self.certifying_agency,
             "valid_from": parse_date(self.valid_from),
-            "valid_to": parse_date(self.valid_to),
-            "products": ", ".join(self.products),
+            "valid_to": valid_to_parsed,
+            "products": products_str,
             "scraped_at": self.scraped_timestamp,
             "score": scoring["score"],
             "has_website": scoring["has_website"],
