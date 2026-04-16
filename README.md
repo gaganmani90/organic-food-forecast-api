@@ -23,71 +23,35 @@ This is a complete ETL (Extract, Transform, Load) pipeline for organic food cert
 ### System Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Jaivik Bharat Website                     │
-│                    (https://jaivikbharat.fssai.gov.in)            │
-└────────────────────────────┬──────────────────────────────────────┘
-                             │
-                             │ HTTP Requests
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    INGESTION LAYER                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │   Scraper    │→ │   Manager    │→ │  Data Saver  │         │
-│  │  (Organic)   │  │              │  │              │         │
-│  └──────────────┘  └──────────────┘  └──────────────┘         │
-│         │                  │                  │                │
-│         └──────────────────┴──────────────────┘                │
-│                            │                                     │
-│                            ▼                                     │
-│              ┌─────────────────────────┐                        │
-│              │  JSON Files (per state)  │                        │
-│              │  output/               │                        │
-│              └─────────────────────────┘                        │
-└────────────────────────────┬──────────────────────────────────────┘
-                             │
-                             │ Load Data
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   SEARCH ENGINE LAYER                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │ File Loader  │→ │   Indexer    │→ │  Bonsai      │         │
-│  │              │  │   Setup      │  │  (Cloud)     │         │
-│  └──────────────┘  └──────────────┘  └──────────────┘         │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │         OpenSearch Index: organic_stores               │   │
-│  │  - Full-text search on store_name, address, products  │   │
-│  │  - Filter by state, certification dates                │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────────────────────────┬──────────────────────────────────────┘
-                             │
-                             │ Query
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      API LAYER                                  │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │              FastAPI Server (Port 8000)               │     │
-│  │  GET /api/search?query=<search_term>                 │     │
-│  │  GET /api/last-refresh                                │     │
-│  │  POST /api/scrape-and-load                            │     │
-│  │  - CORS enabled                                        │     │
-│  │  - Returns up to 10,000 results                       │     │
-│  └──────────────────────────────────────────────────────┘     │
-└────────────────────────────┬──────────────────────────────────────┘
-                             │
-                             │ HTTP Requests
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       UI LAYER                                  │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │         React Web Application (Port 5173)            │     │
-│  │  - Modern TypeScript React app                        │     │
-│  │  - Search interface with Tailwind CSS                 │     │
-│  │  - Display store details, products, certifications  │     │
-│  │  - Responsive design                                   │     │
-│  └──────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                         DATA SOURCE (External)                        │
+│        Jaivik Bharat (FSSAI)  https://jaivikbharat.fssai.gov.in        │
+└───────────────────────────────┬───────────────────────────────────────┘
+                                │ HTTP scrape
+                                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                         BACKEND (Railway)                             │
+│     FastAPI app  https://organic-food-forecast-api-production...       │
+│  - GET  /api/search                                                    │
+│  - GET  /api/last-refresh                                              │
+│  - POST /api/scrape-and-load  (runs scrape + load)                     │
+└───────────────┬───────────────────────────────┬───────────────────────┘
+                │ search queries                 │ index writes
+                ▼                                ▼
+┌──────────────────────────────┐      ┌─────────────────────────────────┐
+│        FRONTEND (Vercel)      │      │     SEARCH STORAGE (Bonsai)      │
+│ https://organic-search-engine │      │ OpenSearch cluster (cloud)       │
+│  - React/Vite UI              │      │ index: organic_stores            │
+└───────────────┬──────────────┘      └─────────────────────────────────┘
+                │ browser calls API (VITE_API_URL)
+                ▼
+        (FastAPI on Railway)
+
+┌──────────────────────────────────────────────────────────────────────┐
+│                      SCHEDULER (cron-job.org)                          │
+│  Daily trigger: POST https://organic-food-forecast-api-production...    │
+│                 /api/scrape-and-load                                   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Data Flow
