@@ -39,7 +39,9 @@ export const StoreList = ({ stores, pagination, loading, error, onPageChange }: 
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">
-        {pagination ? `Found ${pagination.total} result(s)` : `Found ${stores.length} result(s)`}
+        {pagination
+          ? `Found ${pagination.total} result${pagination.total !== 1 ? 's' : ''}`
+          : `Found ${stores.length} result${stores.length !== 1 ? 's' : ''}`}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stores.map((store, index) => (

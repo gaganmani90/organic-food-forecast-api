@@ -11,19 +11,29 @@ export const SearchResultsPage = () => {
   const navigate = useNavigate();
   const query = searchParams.get('q') || '';
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [activeOnly, setActiveOnly] = useState<boolean>(false);
+  const [activeOnly, setActiveOnly] = useState<boolean>(true);
+  const [selectedState, setSelectedState] = useState<string>('');
   const pageSize = 20;
 
   const { stores, pagination, isLoading, error } = useSearch(query, currentPage, pageSize);
 
-  // Filter stores based on activeOnly toggle
+  // Collect unique state values for dropdown
+  const stateOptions = useMemo(() => {
+    const unique = Array.from(new Set(stores.map(s => s.state).filter(Boolean))).sort();
+    return unique;
+  }, [stores]);
+
+  // Filter stores based on activeOnly toggle and state selection
   const filteredStores = useMemo(() => {
-    if (!activeOnly) return stores;
     return stores.filter(store => {
-      const status = getCertificationStatus(store.valid_to);
-      return !status.isExpired;
+      if (activeOnly) {
+        const status = getCertificationStatus(store.valid_to);
+        if (status.isExpired) return false;
+      }
+      if (selectedState && store.state !== selectedState) return false;
+      return true;
     });
-  }, [stores, activeOnly]);
+  }, [stores, activeOnly, selectedState]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -64,18 +74,24 @@ export const SearchResultsPage = () => {
       )}
       
       {!isLoading && stores.length > 0 && (
-        <div className="mt-6 mb-4 flex items-center justify-between bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+        <div className="mt-6 mb-4 flex flex-wrap items-center gap-4 bg-white rounded-lg border border-gray-200 shadow-sm p-4">
           <Toggle
             checked={activeOnly}
-            onChange={setActiveOnly}
+            onChange={(val) => { setActiveOnly(val); }}
             label="Active Only"
             description={activeOnly ? `Hiding ${expiredCount} expired certification${expiredCount !== 1 ? 's' : ''}` : 'Show only active certifications'}
           />
-          {activeOnly && (
-            <div className="text-sm text-gray-600">
-              <span className="font-semibold text-green-600">{filteredStores.length}</span>
-              <span className="text-gray-500"> of {stores.length} results</span>
-            </div>
+          {stateOptions.length > 1 && (
+            <select
+              value={selectedState}
+              onChange={e => setSelectedState(e.target.value)}
+              className="ml-auto text-sm border border-gray-300 rounded-md px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="">All Locations</option>
+              {stateOptions.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
           )}
         </div>
       )}
