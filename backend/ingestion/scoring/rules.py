@@ -64,29 +64,68 @@ _GENERIC_EMAIL_DOMAINS: frozenset[str] = frozenset({
     "outlook.com", "live.com", "icloud.com",
 })
 
+# Characters that are never valid in a well-formed single email address.
+_EMAIL_ILLEGAL_CHARS: frozenset[str] = frozenset({"/", " ", ",", ";", "\t"})
+
+
+def _parse_clean_email(raw: Optional[str]) -> Optional[str]:
+    """Return the email string if it is a valid, single RFC-ish address.
+
+    Rules (strict but pragmatic):
+      - Must contain exactly one '@'.
+      - No characters from _EMAIL_ILLEGAL_CHARS anywhere in the string.
+      - Local part (before '@') must be non-empty.
+      - Domain part (after '@') must contain at least one '.' and have a
+        non-empty label on each side of it.
+
+    Returns None when any rule is violated, so callers never need to worry
+    about garbage data propagating.
+    """
+    if not raw:
+        return None
+    email = raw.strip()
+    if not email:
+        return None
+    # Reject multi-email concatenations and illegal chars
+    if any(c in email for c in _EMAIL_ILLEGAL_CHARS):
+        return None
+    # Exactly one '@'
+    parts = email.split("@")
+    if len(parts) != 2:
+        return None
+    local, domain = parts
+    if not local or not domain:
+        return None
+    # Domain must look like  something.tld
+    domain_parts = domain.split(".")
+    if len(domain_parts) < 2 or not all(domain_parts):
+        return None
+    return email
+
 
 class HasEmailRule(ScoringRule):
-    """Store has any email address on record."""
+    """Store has a valid, well-formed email address on record."""
     points = 5
     key = "has_email"
 
     def evaluate(self, store: StoreData) -> bool:
-        return bool(store.email and store.email.strip())
+        return _parse_clean_email(store.email) is not None
 
 
 class OwnDomainEmailRule(ScoringRule):
     """Email uses a company-owned domain (not Gmail/Yahoo/etc.)
 
     Infers the store likely has a website at that domain.
+    Only scores when the email itself is valid (single, well-formed address).
     """
     points = 20
     key = "has_website"
 
     def evaluate(self, store: StoreData) -> bool:
-        email = store.email or ""
-        if not email or "@" not in email:
+        email = _parse_clean_email(store.email)
+        if not email:
             return False
-        domain = email.strip().lower().split("@")[-1]
+        domain = email.lower().split("@")[1]
         return domain not in _GENERIC_EMAIL_DOMAINS
 
 

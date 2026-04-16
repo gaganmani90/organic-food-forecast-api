@@ -14,6 +14,29 @@ const toTitleCase = (str: string): string => {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 };
 
+/**
+ * Returns the bare domain (e.g. "sowfresh.in") only when the email is a
+ * single, well-formed address.  Returns null for anything ambiguous so we
+ * never construct a broken URL.
+ *
+ * Rejects: multiple '@', slashes, commas, spaces, and any domain that
+ * doesn't look like  something.tld.
+ */
+const extractDomain = (email: string | undefined): string | null => {
+  if (!email) return null;
+  const trimmed = email.trim();
+  // Reject illegal characters that indicate concatenated / malformed emails
+  if (/[/,; \t]/.test(trimmed)) return null;
+  const parts = trimmed.split('@');
+  if (parts.length !== 2) return null;
+  const [local, domain] = parts;
+  if (!local || !domain) return null;
+  // Domain must have at least one dot with non-empty labels on each side
+  const domainParts = domain.split('.');
+  if (domainParts.length < 2 || domainParts.some(p => p === '')) return null;
+  return domain.toLowerCase();
+};
+
 interface StoreCardProps {
   store: Store;
 }
@@ -22,6 +45,7 @@ export const StoreCard = ({ store }: StoreCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const productList = parseProducts(store.products);
   const status = getCertificationStatus(store.valid_to);
+  const websiteDomain = store.has_website ? extractDomain(store.email) : null;
 
   return (
     <div className="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow">
@@ -40,10 +64,10 @@ export const StoreCard = ({ store }: StoreCardProps) => {
           <span className="font-medium">📅 Valid:</span>{' '}
           {formatDate(store.valid_from)} → {formatDate(store.valid_to)}
         </p>
-        {store.has_website && store.email && (
+        {websiteDomain && (
           <p>
             <a
-              href={`https://${store.email.split('@')[1]}`}
+              href={`https://${websiteDomain}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
